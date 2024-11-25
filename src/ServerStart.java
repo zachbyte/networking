@@ -1,3 +1,9 @@
+/*
+Programmer: Zach Nowlin
+Date: November 25, 2024
+Purpose: Entry point for the server application. Initializes and starts the server,
+         providing a command-line interface for server control and shutdown.
+*/
 import java.util.Scanner;
 
 public class ServerStart {

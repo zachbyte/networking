@@ -1,3 +1,9 @@
+/*
+Programmer: Zach Nowlin
+Date: November 25, 2024
+Purpose: Utility class providing helper methods for matrix operations including
+         string conversion, printing, and file validation.
+*/
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;

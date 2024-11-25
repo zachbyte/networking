@@ -1,5 +1,9 @@
-
-// ClientStart.java
+/*
+Programmer: Zach Nowlin
+Date: November 25, 2024
+Purpose: Entry point for the client application. Initializes and launches the
+         client GUI with proper window closing behavior.
+*/
 import javax.swing.JFrame;
 
 public class ClientStart {

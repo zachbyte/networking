@@ -1,3 +1,10 @@
+/*
+Programmer: Zach Nowlin
+Date: November 25, 2024
+Purpose: Client application for matrix processing system. Provides GUI interface 
+         for users to input matrix files and displays the results. Handles file reading,
+         matrix validation, and communication with the server.
+*/
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -212,7 +219,7 @@ public class Client extends JFrame {
     }
   }
 
-  private void validateDimensions(int rows, int cols) throws IOException {
+  void validateDimensions(int rows, int cols) throws IOException {
     if (rows <= 0 || cols <= 0) {
       throw new IOException("Invalid matrix dimensions: rows=" + rows + ", cols=" + cols);
     }

@@ -1,4 +1,3 @@
-
 // Create and start a ReadWriteData object.
 import javax.swing.JFrame;
 

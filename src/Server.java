@@ -1,3 +1,10 @@
+/*
+Programmer: Zach Nowlin
+Date: November 25, 2024
+Purpose: Server component of matrix processing system. Accepts client connections,
+         receives matrices, and manages multiple client connections concurrently.
+         Displays received matrices and prepares for future matrix calculations.
+*/
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
