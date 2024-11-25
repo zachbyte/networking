@@ -4,3 +4,7 @@ Nov 25, 2024 9:34:30 AM Server stopServer
 INFO: Server stopped
 Nov 25, 2024 9:34:34 AM Server startServer
 INFO: Server started on port 12345
+Nov 25, 2024 10:14:18 AM Server startServer
+INFO: Server started on port 12345
+Nov 25, 2024 10:14:22 AM Server stopServer
+INFO: Server stopped

@@ -193,24 +193,20 @@ public class Client extends JFrame {
 
     Scanner fileScanner = new Scanner(file);
     try {
-      // Read dimensions
       int rows = fileScanner.nextInt();
       int cols = fileScanner.nextInt();
 
-      validateDimensions(rows, cols);
+      if (rows <= 0 || cols <= 0) {
+        throw new IOException("Invalid matrix dimensions");
+      }
 
       int[][] matrix1 = new int[rows][cols];
       int[][] matrix2 = new int[rows][cols];
 
-      // Read first matrix
       readMatrixData(fileScanner, matrix1, rows, cols);
-      // Read second matrix
       readMatrixData(fileScanner, matrix2, rows, cols);
 
       return new MatrixData(rows, cols, matrix1, matrix2);
-
-    } catch (Exception e) {
-      throw new IOException("Invalid matrix file format: " + e.getMessage());
     } finally {
       fileScanner.close();
     }
