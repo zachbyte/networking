@@ -1,3 +1,4 @@
+
 /*
 Programmer: Zach Nowlin
 Date: November 25, 2024
@@ -198,33 +199,51 @@ public class Client extends JFrame {
       throw new FileNotFoundException("File not found: " + filename);
     }
 
-    Scanner fileScanner = new Scanner(file);
-    try {
-      int rows = fileScanner.nextInt();
-      int cols = fileScanner.nextInt();
-
-      if (rows <= 0 || cols <= 0) {
-        throw new IOException("Invalid matrix dimensions");
+    try (Scanner fileScanner = new Scanner(file)) {
+      // Read dimensions from first line
+      String[] dimensions = fileScanner.nextLine().trim().split("\\s+");
+      if (dimensions.length != 2) {
+        throw new IOException("Invalid format: First line must contain rows and columns");
       }
 
-      int[][] matrix1 = new int[rows][cols];
-      int[][] matrix2 = new int[rows][cols];
+      int rows = Integer.parseInt(dimensions[0]);
+      int cols = Integer.parseInt(dimensions[1]);
+      validateDimensions(rows, cols);
 
-      readMatrixData(fileScanner, matrix1, rows, cols);
-      readMatrixData(fileScanner, matrix2, rows, cols);
+      // Read first matrix
+      int[][] matrix1 = new int[rows][cols];
+      for (int i = 0; i < rows; i++) {
+        String[] values = fileScanner.nextLine().trim().split("\\s+");
+        if (values.length != cols) {
+          throw new IOException("Invalid matrix row length at line " + (i + 2));
+        }
+        for (int j = 0; j < cols; j++) {
+          matrix1[i][j] = Integer.parseInt(values[j]);
+        }
+      }
+
+      // Create second matrix with same dimensions
+      int[][] matrix2 = new int[rows][cols];
+      // Fill with ones - this creates an identity-like operation when adding
+      for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+          matrix2[i][j] = 1; // Fill with 1s for addition
+        }
+      }
 
       return new MatrixData(rows, cols, matrix1, matrix2);
-    } finally {
-      fileScanner.close();
+    } catch (NumberFormatException e) {
+      throw new IOException("Invalid number format in matrix file: " + e.getMessage());
     }
   }
 
-  void validateDimensions(int rows, int cols) throws IOException {
+  private void validateDimensions(int rows, int cols) throws IOException {
     if (rows <= 0 || cols <= 0) {
       throw new IOException("Invalid matrix dimensions: rows=" + rows + ", cols=" + cols);
     }
-    if (rows % 2 != 0 || cols % 2 != 0) {
-      throw new IOException("Matrix dimensions must be even numbers for quadrant processing");
+    // Remove the even number requirement since we'll handle any dimensions
+    if (rows > ConnectionConfig.MAX_MATRIX_SIZE || cols > ConnectionConfig.MAX_MATRIX_SIZE) {
+      throw new IOException("Matrix dimensions exceed maximum allowed size");
     }
   }
 

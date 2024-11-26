@@ -1,3 +1,4 @@
+
 /*
 Programmer: Zach Nowlin
 Date: November 25, 2024
@@ -9,16 +10,15 @@ import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
-import java.util.logging.Level;
-import java.util.logging.FileHandler;
-import java.util.logging.SimpleFormatter;
+import java.util.logging.*;
 
 public class Server {
   private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
   private static final int PORT = 12345;
   private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+  private static final String TERMINATE = "TERMINATE";
 
   private ServerSocket server;
   private final AtomicInteger clientCount = new AtomicInteger(0);
@@ -79,10 +79,12 @@ public class Server {
     private final int clientId;
     private ObjectInputStream input;
     private ObjectOutputStream output;
+    private boolean clientRunning;
 
     public ClientHandler(Socket connection, int clientId) {
       this.connection = connection;
       this.clientId = clientId;
+      this.clientRunning = true;
     }
 
     @Override
@@ -106,8 +108,18 @@ public class Server {
 
     private void processClient() {
       try {
-        while (true) {
-          // Read matrices from client
+        while (clientRunning) {
+          // First check if there's a command
+          if (input.available() > 0) {
+            Object inputObj = input.readObject();
+            if (inputObj instanceof String && ((String) inputObj).equals(TERMINATE)) {
+              LOGGER.log(Level.INFO, "Received TERMINATE command from client " + clientId);
+              clientRunning = false;
+              break;
+            }
+          }
+
+          // Process matrices
           int[][] matrix1 = (int[][]) input.readObject();
           int[][] matrix2 = (int[][]) input.readObject();
 
@@ -123,6 +135,25 @@ public class Server {
           displayMatrix(matrix1);
           System.out.println("\nMatrix 2:");
           displayMatrix(matrix2);
+
+          // Process matrices concurrently
+          try {
+            int[][] result = MatrixProcessor.processConcurrently(matrix1, matrix2);
+
+            // Send result back to client
+            output.writeObject(result);
+            output.flush();
+
+            // Log success
+            LOGGER.log(Level.INFO, "Processed and sent result to client " + clientId);
+            System.out.println("\nResult matrix sent to client " + clientId + ":");
+            displayMatrix(result);
+
+          } catch (InterruptedException | ExecutionException e) {
+            LOGGER.log(Level.SEVERE, "Error processing matrices", e);
+            output.writeObject(null); // Send null to indicate error
+            output.flush();
+          }
         }
       } catch (EOFException e) {
         LOGGER.log(Level.INFO, "Client " + clientId + " closed connection");
