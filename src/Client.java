@@ -37,6 +37,7 @@ public class Client extends JFrame {
   private ObjectInputStream input;
   private Socket client;
   private volatile boolean isConnected;
+  private Thread resultListenerThread;
 
   public Client() {
     super("Matrix Processing Client");
@@ -210,8 +211,11 @@ public class Client extends JFrame {
       int cols = Integer.parseInt(dimensions[1]);
       validateDimensions(rows, cols);
 
-      // Read first matrix
+      // Read both matrices
       int[][] matrix1 = new int[rows][cols];
+      int[][] matrix2 = new int[rows][cols];
+
+      // Read first matrix
       for (int i = 0; i < rows; i++) {
         String[] values = fileScanner.nextLine().trim().split("\\s+");
         if (values.length != cols) {
@@ -222,12 +226,17 @@ public class Client extends JFrame {
         }
       }
 
-      // Create second matrix with same dimensions
-      int[][] matrix2 = new int[rows][cols];
-      // Fill with ones - this creates an identity-like operation when adding
+      // Read second matrix (next 4 lines in the file)
       for (int i = 0; i < rows; i++) {
+        if (!fileScanner.hasNextLine()) {
+          throw new IOException("Missing data for second matrix");
+        }
+        String[] values = fileScanner.nextLine().trim().split("\\s+");
+        if (values.length != cols) {
+          throw new IOException("Invalid matrix row length in second matrix at line " + (i + rows + 2));
+        }
         for (int j = 0; j < cols; j++) {
-          matrix2[i][j] = 1; // Fill with 1s for addition
+          matrix2[i][j] = Integer.parseInt(values[j]);
         }
       }
 
@@ -284,7 +293,7 @@ public class Client extends JFrame {
     StringBuilder sb = new StringBuilder();
     for (int[] row : matrix) {
       for (int val : row) {
-        sb.append(String.format("%4d", val));
+        sb.append(String.format("%5d", val)); // Increased spacing for larger numbers
       }
       sb.append("\n");
     }
@@ -314,5 +323,36 @@ public class Client extends JFrame {
       this.matrix1 = matrix1;
       this.matrix2 = matrix2;
     }
+  }
+
+  private void startResultListener() {
+    resultListenerThread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          while (isConnected) {
+            Object result = input.readObject();
+            if (result instanceof int[][]) {
+              displayMessage("\n=== SOLUTION MATRIX (Concurrent Sum) ===\n");
+              int[][] solutionMatrix = (int[][]) result;
+              displayMatrix(solutionMatrix);
+              displayMessage("\n=====================================\n");
+            } else if (result == null) {
+              displayMessage("\nError: Server returned null result");
+            }
+          }
+        } catch (EOFException e) {
+          LOGGER.log(Level.INFO, "Server closed the connection");
+        } catch (IOException | ClassNotFoundException e) {
+          if (isConnected) {
+            LOGGER.log(Level.SEVERE, "Error receiving result from server", e);
+            displayMessage("\nError receiving result: " + e.getMessage());
+            SwingUtilities.invokeLater(() -> closeConnection());
+          }
+        }
+      }
+    });
+    resultListenerThread.setDaemon(true);
+    resultListenerThread.start();
   }
 }

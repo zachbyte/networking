@@ -109,7 +109,7 @@ public class Server {
     private void processClient() {
       try {
         while (clientRunning) {
-          // First check if there's a command
+          // Check for TERMINATE command
           if (input.available() > 0) {
             Object inputObj = input.readObject();
             if (inputObj instanceof String && ((String) inputObj).equals(TERMINATE)) {
@@ -119,46 +119,35 @@ public class Server {
             }
           }
 
-          // Process matrices
+          // Read matrices
           int[][] matrix1 = (int[][]) input.readObject();
           int[][] matrix2 = (int[][]) input.readObject();
 
-          // Log receipt of matrices
-          String timestamp = DATE_FORMAT.format(new Date());
-          LOGGER.log(Level.INFO, String.format(
-              "Received matrices from client %d at %s - Dimensions: %dx%d",
-              clientId, timestamp, matrix1.length, matrix1[0].length));
+          // Log receipt
+          LOGGER.log(Level.INFO, "Processing matrices from client " + clientId);
 
-          // Display matrices
-          System.out.println("\nReceived from client " + clientId + ":");
-          System.out.println("Matrix 1:");
-          displayMatrix(matrix1);
-          System.out.println("\nMatrix 2:");
-          displayMatrix(matrix2);
+          // Process matrices and get result
+          int[][] result = MatrixProcessor.processConcurrently(matrix1, matrix2);
 
-          // Process matrices concurrently
-          try {
-            int[][] result = MatrixProcessor.processConcurrently(matrix1, matrix2);
+          // Log the result before sending
+          System.out.println("\nCalculated result matrix for client " + clientId + ":");
+          displayMatrix(result);
 
-            // Send result back to client
-            output.writeObject(result);
-            output.flush();
-
-            // Log success
-            LOGGER.log(Level.INFO, "Processed and sent result to client " + clientId);
-            System.out.println("\nResult matrix sent to client " + clientId + ":");
-            displayMatrix(result);
-
-          } catch (InterruptedException | ExecutionException e) {
-            LOGGER.log(Level.SEVERE, "Error processing matrices", e);
-            output.writeObject(null); // Send null to indicate error
-            output.flush();
-          }
+          // Send result back to client
+          output.writeObject(result);
+          output.flush();
+          LOGGER.log(Level.INFO, "Sent result matrix to client " + clientId);
         }
       } catch (EOFException e) {
         LOGGER.log(Level.INFO, "Client " + clientId + " closed connection");
-      } catch (ClassNotFoundException | IOException e) {
+      } catch (IOException | ClassNotFoundException | InterruptedException | ExecutionException e) {
         LOGGER.log(Level.SEVERE, "Error processing matrices from client " + clientId, e);
+        try {
+          output.writeObject(null); // Indicate error to client
+          output.flush();
+        } catch (IOException ex) {
+          LOGGER.log(Level.SEVERE, "Error sending error status to client", ex);
+        }
       }
     }
 
